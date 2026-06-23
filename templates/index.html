@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+  </head>
+  <body class="min-h-screen bg-stone-100 text-stone-950">
+    <main class="mx-auto grid w-full max-w-6xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:py-10">
+      <section class="space-y-6">
+        <header>
+          <p class="text-xs font-bold uppercase text-emerald-700">Python + Flask</p>
+          <h1 class="mt-2 text-4xl font-black tracking-tight sm:text-5xl">Expense Tracker</h1>
+          <p class="mt-3 max-w-2xl text-base leading-7 text-stone-600">
+            Enter your monthly income, turn on the expense types you use, and calculate what is left after spending.
+          </p>
+        </header>
+
+        <form id="budget-form" method="post" action="/" autocomplete="off" class="rounded-lg border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+          <label class="mb-2 block text-sm font-bold text-stone-700" for="monthly_income">Monthly salary or wage</label>
+          <div class="mb-6 flex rounded-lg border border-stone-300 bg-white focus-within:border-emerald-600 focus-within:ring-4 focus-within:ring-emerald-600/15">
+            <span class="grid w-11 place-items-center border-r border-stone-200 text-stone-500">$</span>
+            <input
+              class="min-h-12 w-full rounded-r-lg px-3 outline-none"
+              id="monthly_income"
+              name="monthly_income"
+              min="0"
+              step="0.01"
+              type="number"
+              placeholder="3000.00"
+              value="{{ form.monthly_income if form else '' }}"
+            >
+          </div>
+
+          <div class="mb-4 flex items-center justify-between gap-4">
+            <h2 class="text-lg font-extrabold">Expense types</h2>
+            <span class="text-sm font-medium text-stone-500">Toggle only what applies</span>
+          </div>
+
+          <div class="grid gap-3">
+            {% for category in categories %}
+              {% set enabled_name = 'enabled_' + category.key %}
+              {% set amount_name = 'amount_' + category.key %}
+              {% set is_enabled = form.get(enabled_name) == 'on' %}
+
+              <div class="expense-row rounded-lg border border-stone-200 bg-stone-50 p-4" data-expense-row>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <label class="flex cursor-pointer items-center gap-3 text-sm font-extrabold text-stone-800">
+                    <input
+                      class="expense-toggle h-5 w-5 rounded border-stone-300 text-emerald-700 focus:ring-emerald-600"
+                      name="{{ enabled_name }}"
+                      type="checkbox"
+                      {% if is_enabled %}checked{% endif %}
+                    >
+                    {{ category.label }}
+                  </label>
+
+                  <div class="expense-amount flex w-full rounded-lg border border-stone-300 bg-white sm:w-52 {% if not is_enabled %}hidden{% endif %}">
+                    <span class="grid w-10 place-items-center border-r border-stone-200 text-stone-500">$</span>
+                    <input
+                      class="min-h-11 w-full rounded-r-lg px-3 outline-none disabled:bg-stone-100 disabled:text-stone-400"
+                      name="{{ amount_name }}"
+                      min="0"
+                      step="0.01"
+                      type="number"
+                      placeholder="0.00"
+                      value="{{ form.get(amount_name, '') }}"
+                      {% if not is_enabled %}disabled{% endif %}
+                    >
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="mt-6 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
+            <button class="cursor-pointer min-h-12 rounded-lg bg-emerald-700 px-5 py-3 font-extrabold text-white transition hover:bg-emerald-800" type="submit" formaction="/">
+              Calculate budget
+            </button>
+
+             <button class="cursor-pointer min-h-12 rounded-lg bg-stone-900 px-5 py-3 text-sm font-extrabold text-white transition hover:bg-stone-700" type="submit" formaction="/download-summary">
+              Download Summary
+            </button>
+
+            <label class="sr-only" for="download_format">Download format</label>
+            <select
+              class="cursor-pointer min-h-12 rounded-lg border border-stone-300 bg-white px-3 py-3 text-sm font-extrabold text-stone-700 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/15"
+              id="download_format"
+              name="download_format"
+            >
+              <option value="pdf">PDF</option>
+              <option value="txt">Plain Text File</option>
+            </select>
+
+            <a class="grid min-h-12 place-items-center rounded-lg border border-stone-300 px-5 py-3 text-sm font-extrabold text-stone-700 transition hover:bg-stone-200" href="/">
+              Clear
+            </a>
+          </div>
+        </form>
+      </section>
+
+      <aside class="space-y-6">
+        <section class="rounded-lg border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 class="mb-4 text-lg font-extrabold">Budget summary</h2>
+
+          {% if result and result.errors %}
+            <div class="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+              {% for error in result.errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if result and not result.errors %}
+            <div class="grid gap-3">
+              <div class="flex items-center justify-between rounded-lg bg-stone-100 p-4">
+                <span class="font-bold text-stone-600">Monthly income</span>
+                <strong class="text-xl">${{ "%.2f"|format(result.monthly_income) }}</strong>
+              </div>
+              <div class="flex items-center justify-between rounded-lg bg-stone-100 p-4">
+                <span class="font-bold text-stone-600">Total expenses</span>
+                <strong class="text-xl">${{ "%.2f"|format(result.total_expenses) }}</strong>
+              </div>
+              <div class="flex items-center justify-between rounded-lg {% if result.remaining_money < 0 %}bg-red-50 text-red-800{% else %}bg-emerald-50 text-emerald-900{% endif %} p-4">
+                <span class="font-bold">Money remaining</span>
+                <strong class="text-xl">${{ "%.2f"|format(result.remaining_money) }}</strong>
+              </div>
+            </div>
+
+            <div class="mt-6">
+              <div class="mb-2 flex items-center justify-between text-sm font-bold text-stone-600">
+                <span>Income used</span>
+                <span>{{ result.percent_used }}%</span>
+              </div>
+              <div class="h-4 overflow-hidden rounded-full bg-stone-200">
+                <div
+                  class="h-full rounded-full {% if result.insight.tone == 'danger' %}bg-red-600{% elif result.insight.tone == 'warning' %}bg-amber-500{% elif result.insight.tone == 'notice' %}bg-blue-600{% else %}bg-emerald-700{% endif %}"
+                  style="width: {{ result.progress_width }}%"
+                ></div>
+              </div>
+            </div>
+
+            <div class="mt-5 rounded-lg border p-4 {% if result.insight.tone == 'danger' %}border-red-200 bg-red-50 text-red-800{% elif result.insight.tone == 'warning' %}border-amber-200 bg-amber-50 text-amber-900{% elif result.insight.tone == 'notice' %}border-blue-200 bg-blue-50 text-blue-900{% else %}border-emerald-200 bg-emerald-50 text-emerald-900{% endif %}">
+              <h3 class="font-extrabold">{{ result.insight.title }}</h3>
+              <p class="mt-2 text-sm font-medium leading-6">{{ result.insight.message }}</p>
+            </div>
+          {% else %}
+            <p class="leading-7 text-stone-600">
+              Your summary will appear here after you enter income, choose expense types, and calculate.
+            </p>
+          {% endif %}
+        </section>
+
+        <section class="rounded-lg border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 class="mb-4 text-lg font-extrabold">Expense breakdown</h2>
+
+          {% if result and not result.errors and result.selected_expenses %}
+            <div class="grid gap-3">
+              {% for expense in result.selected_expenses %}
+                <div class="flex items-center justify-between border-b border-stone-100 pb-3 last:border-b-0 last:pb-0">
+                  <span class="font-bold text-stone-700">{{ expense.label }}</span>
+                  <strong>${{ "%.2f"|format(expense.amount) }}</strong>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="leading-7 text-stone-600">No expense breakdown yet.</p>
+          {% endif %}
+        </section>
+      </aside>
+    </main>
+
+    <script>
+      const budgetForm = document.querySelector("#budget-form");
+      const expenseRows = document.querySelectorAll("[data-expense-row]");
+
+      for (const row of expenseRows) {
+        const checkbox = row.querySelector(".expense-toggle");
+        const amountWrapper = row.querySelector(".expense-amount");
+        const amountInput = amountWrapper.querySelector("input");
+
+        function updateAmountVisibility(shouldClearValue = true) {
+          amountWrapper.classList.toggle("hidden", !checkbox.checked);
+          amountInput.disabled = !checkbox.checked;
+
+          if (!checkbox.checked && shouldClearValue) {
+            amountInput.value = "";
+          }
+        }
+
+        checkbox.addEventListener("change", updateAmountVisibility);
+        updateAmountVisibility(false);
+      }
+
+      budgetForm.addEventListener("submit", function () {
+        for (const row of expenseRows) {
+          const checkbox = row.querySelector(".expense-toggle");
+          const amountInput = row.querySelector(".expense-amount input");
+
+          amountInput.disabled = !checkbox.checked;
+        }
+      });
+    </script>
+  </body>
+</html>
