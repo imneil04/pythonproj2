@@ -141,9 +141,10 @@
               </div>
             </div>
 
-            <div class="mt-5 rounded-lg border p-4 {% if result.insight.tone == 'danger' %}border-red-200 bg-red-50 text-red-800{% elif result.insight.tone == 'warning' %}border-amber-200 bg-amber-50 text-amber-900{% elif result.insight.tone == 'notice' %}border-blue-200 bg-blue-50 text-blue-900{% else %}border-emerald-200 bg-emerald-50 text-emerald-900{% endif %}">
+            <div class="relative mt-5 overflow-hidden rounded-lg border p-4 pb-5 {% if result.insight.tone == 'danger' %}border-red-200 bg-red-50 text-red-800{% elif result.insight.tone == 'warning' %}border-amber-200 bg-amber-50 text-amber-900{% elif result.insight.tone == 'notice' %}border-blue-200 bg-blue-50 text-blue-900{% else %}border-emerald-200 bg-emerald-50 text-emerald-900{% endif %}">
               <h3 class="font-extrabold">{{ result.insight.title }}</h3>
               <p class="mt-2 text-sm font-medium leading-6">{{ result.insight.message }}</p>
+              <div class="absolute inset-x-4 bottom-0 h-1 animate-pulse rounded-full {% if result.insight.tone == 'danger' %}bg-red-500 shadow-[0_0_18px_rgba(239,68,68,0.75)]{% elif result.insight.tone == 'warning' %}bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.8)]{% elif result.insight.tone == 'notice' %}bg-blue-500 shadow-[0_0_18px_rgba(59,130,246,0.75)]{% else %}bg-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.75)]{% endif %}"></div>
             </div>
           {% else %}
             <p class="leading-7 text-stone-600">
